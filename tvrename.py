@@ -57,6 +57,29 @@ class Renamer(object):
                 re.match(pattern, j,
                          re.IGNORECASE)]
 
+    @staticmethod
+    def ask_candidates(candidates):
+        """Ask the user to pick from a list"""
+        Colour.white("Candidates are:")
+        for (idx, name) in enumerate(candidates):
+            print("[%d] %s" % (idx + 1, name))
+
+        while True:
+            choice = raw_input("%sChoice? [1-%d/Q]%s " % (Colour.WHITE,
+                                                          len(candidates),
+                                                          Colour.END))
+            if choice.lower() == "q" or choice == "":
+                return None
+            elif choice.isdigit():
+                val = int(choice) - 1
+                if val < len(candidates) and val >= 0:
+                    return candidates[val]
+
+            print("Invalid selection '%s'." % choice)
+
+
+
+
     def move(self, files, directory):
         """
         Move files to their proper place
@@ -77,18 +100,20 @@ class Renamer(object):
                 pattern = os.path.basename(name).replace('.', '.+') + '.*'
                 result = self.find_candidates(directory, pattern)
 
-                if len(result) > 1:
-                    # TODO: Ask which one they'd like to use; for now we give up
-                    Colour.white("Couldn't determine desination for %s."
-                                 "Candidates are: '%s'" %
-                                 (os.path.basename(fname), "' '".join(result)))
-                    continue
-                elif len(result) == 0:
+                if len(result) == 0:
                     Colour.red("Couldn't determine destination for %s." %
                                os.path.basename(fname))
                     continue
+                elif len(result) > 1:
+                    Colour.white("Couldn't determine desination for %s." %
+                                 os.path.basename(fname))
+                    destination = self.ask_candidates(result)
+                    if destination == None:
+                        continue
+                else:
+                    destination = result[0]
 
-                destination = os.path.join(result[0], "S%02d" % season)
+                destination = os.path.join(destination, "S%02d" % season)
                 if os.path.isdir(destination):
                     self.confirm_move(fname, os.path.join(destination, new_name))
                 else:
